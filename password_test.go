@@ -24,19 +24,12 @@ type mock struct {
 	password string
 }
 
-func (m *mock) New() *Credentials {
-	return &Credentials{
-		ID:     m.username,
-		Secret: m.password,
-	}
-}
-
 func (m *mock) Store(hashedPassword string) (string, error) {
 	storedPassword = hashedPassword
 	return "1", nil
 }
 
-func (m *mock) Retrieve() (string, error) {
+func (m *mock) Retrieve(id string) (string, error) {
 	return storedPassword, nil
 }
 
@@ -49,7 +42,8 @@ func TestNew(t *testing.T) {
 		username: "Tester",
 		password: "password",
 	}
-	New(m)
+
+	New(m.password, m)
 
 	if m.password == storedPassword {
 		t.Errorf("Password hashing failed")
@@ -61,7 +55,7 @@ func TestCompare(t *testing.T) {
 		username: "Tester",
 		password: "password",
 	}
-	tokStr, err := Compare(m)
+	tokStr, err := Compare(m.username, m.password, m)
 
 	if err != nil {
 		t.Errorf("Comparing passwords failed with error: %s\n", err)
@@ -88,7 +82,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 
-	Authenticate(w, m)
+	Authenticate(m.username, m.password, w, m)
 	body, err := ioutil.ReadAll(w.Body)
 
 	if err != nil {
