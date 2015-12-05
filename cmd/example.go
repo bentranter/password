@@ -47,7 +47,7 @@ type user struct {
 func createUser(w http.ResponseWriter, r *http.Request) {
 	var u user
 	json.NewDecoder(r.Body).Decode(&u)
-	fmt.Printf("Fucking user: %+v\n", u)
+	fmt.Printf("User: %+v\n", u)
 
 	id, err := password.New(u.password, db)
 	if err != nil {
@@ -61,7 +61,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func comparePwd(w http.ResponseWriter, r *http.Request) {
 	var u user
 	json.NewDecoder(r.Body).Decode(&u)
-	fmt.Printf("Fucking user: %+v\n", u)
+	fmt.Printf("User: %+v\n", u)
 
 	password.Authenticate(u.username, u.password, w, db)
 }
