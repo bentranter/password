@@ -40,16 +40,15 @@ func (db *inMemDB) Retrieve(id string) (string, error) {
 }
 
 type user struct {
-	username string `json:"username"`
-	password string `json:"password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
 	var u user
 	json.NewDecoder(r.Body).Decode(&u)
-	fmt.Printf("User: %+v\n", u)
 
-	id, err := password.New(u.password, db)
+	id, err := password.New(u.Password, db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -61,9 +60,10 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func comparePwd(w http.ResponseWriter, r *http.Request) {
 	var u user
 	json.NewDecoder(r.Body).Decode(&u)
-	fmt.Printf("User: %+v\n", u)
 
-	password.Authenticate(u.username, u.password, w, db)
+	fmt.Println("Password: ", u.Password)
+
+	password.Authenticate(u.Username, u.Password, w, db)
 }
 
 func authReq(ctx context.Context, w http.ResponseWriter, r *http.Request) {

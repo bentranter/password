@@ -2,8 +2,10 @@ package password
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,11 +15,13 @@ import (
 )
 
 var (
-	signingKey = genRandBytes()
+	signingKey = genRandStr()
 
 	// ErrInvalidSigningMethod is the error returned when a token's signature
 	// does match the signature used to sign the token header.
 	ErrInvalidSigningMethod = errors.New("Invalid signing method")
+	// ErrTokenInvalid means the signature didn't match.
+	ErrTokenInvalid = errors.New("Token isn't valid")
 )
 
 // Authenticator is an interface for storing and retrieving hashed passwords
@@ -32,6 +36,7 @@ type Authenticator interface {
 // that entry in the database.
 func New(password string, a Authenticator) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	defer fmt.Println(signingKey)
 	if err != nil {
 		return "", err // couldn't run bcrypt
 	}
@@ -51,6 +56,7 @@ func Compare(id string, password string, a Authenticator) (string, error) {
 	if err != nil {
 		return "", err // failed to retrieve password
 	}
+	defer fmt.Println(signingKey)
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
@@ -63,6 +69,7 @@ func Compare(id string, password string, a Authenticator) (string, error) {
 // Authenticate runs `Compare` against an authenticator interface, and responds
 // with a JSON web token in the body of the request.
 func Authenticate(id string, password string, w http.ResponseWriter, a Authenticator) {
+	defer fmt.Println(signingKey)
 	tokStr, err := Compare(id, password, a)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,6 +85,7 @@ func Authenticate(id string, password string, w http.ResponseWriter, a Authentic
 type Protected func(ctx context.Context, w http.ResponseWriter, r *http.Request)
 
 func (fn Protected) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer fmt.Println(signingKey)
 	tok, err := jwt.ParseFromRequest(r, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if ok == false {
@@ -88,6 +96,11 @@ func (fn Protected) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// might wanna use switch statement
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if tok.Valid != true {
+		http.Error(w, ErrTokenInvalid.Error(), http.StatusUnauthorized)
 	}
 
 	id := tok.Claims["sub"]
@@ -102,7 +115,7 @@ func (fn Protected) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // no longer be able to verify JSON web tokens created with that key. In order
 // to reuse the signing key, you must set it yourself. Just call this function
 // before creating any tokens, and you'll be good to go.
-func SetSigningKey(key []byte) {
+func SetSigningKey(key string) {
 	signingKey = key
 }
 
@@ -116,13 +129,14 @@ func genToken(id string) (string, error) {
 
 	tokStr, err := jwt.SignedString(signingKey)
 	if err != nil {
+		fmt.Println("problem with signing key")
 		return "", err // failed to sign token
 	}
 
 	return tokStr, nil
 }
 
-func genRandBytes() []byte {
+func genRandStr() string {
 	// Use 32 bytes (256 bits) to satisfy the requirement for the HMAC key
 	// length.
 	b := make([]byte, 32)
@@ -133,5 +147,5 @@ func genRandBytes() []byte {
 		// and crash here
 		panic(err)
 	}
-	return b
+	return base64.URLEncoding.EncodeToString(b)
 }
