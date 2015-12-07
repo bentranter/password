@@ -24,7 +24,7 @@ var (
 
 // Authenticator is an interface for storing and retrieving hashed passwords
 type Authenticator interface {
-	Store(hashedPassword string) (string, error)
+	Store(id string, hashedPassword string) (string, error)
 	Retrieve(id string) (string, error)
 }
 
@@ -32,13 +32,13 @@ type Authenticator interface {
 // and stores it. The returned string is the generated key used to identify
 // that id/secret combination. It is typically the primary used to retrieve
 // that entry in the database.
-func New(password string, a Authenticator) (string, error) {
+func New(username string, password string, a Authenticator) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err // couldn't run bcrypt
 	}
 
-	id, err := a.Store(string(hashedPassword))
+	id, err := a.Store(username, string(hashedPassword))
 	if err != nil {
 		return "", err // couldn't store pwd in db
 	}

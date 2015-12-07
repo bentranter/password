@@ -28,7 +28,7 @@ func newInMemDB() *inMemDB {
 	}
 }
 
-func (db *inMemDB) Store(hashedPassword string) (string, error) {
+func (db *inMemDB) Store(id string, hashedPassword string) (string, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
 	key := genKey()
@@ -51,7 +51,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	var u user
 	json.NewDecoder(r.Body).Decode(&u)
 
-	id, err := password.New(u.Password, db)
+	id, err := password.New(u.Username, u.Password, db)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

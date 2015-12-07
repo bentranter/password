@@ -27,7 +27,8 @@ type mock struct {
 	password string
 }
 
-func (m *mock) Store(hashedPassword string) (string, error) {
+func (m *mock) Store(id string, hashedPassword string) (string, error) {
+	// Don't do anything with the id since we hard code 1 in these tests
 	storedPassword = hashedPassword
 	return "1", nil
 }
@@ -46,7 +47,7 @@ func TestNew(t *testing.T) {
 		password: "password",
 	}
 
-	New(m.password, m)
+	New(m.username, m.password, m)
 
 	if m.password == storedPassword {
 		t.Errorf("Password hashing failed")
