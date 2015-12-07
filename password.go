@@ -15,7 +15,6 @@ import (
 
 var (
 	signingKey = genRandBytes()
-
 	// ErrInvalidSigningMethod is the error returned when a token's signature
 	// does match the signature used to sign the token header.
 	ErrInvalidSigningMethod = errors.New("Invalid signing method")
