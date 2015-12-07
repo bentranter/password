@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,27 +18,28 @@ var (
 
 type inMemDB struct {
 	rwm *sync.RWMutex
-	m   map[int]string
+	m   map[string]string
 }
 
 func newInMemDB() *inMemDB {
 	return &inMemDB{
 		rwm: &sync.RWMutex{},
-		m:   make(map[int]string),
+		m:   make(map[string]string),
 	}
 }
 
 func (db *inMemDB) Store(hashedPassword string) (string, error) {
 	db.rwm.Lock()
 	defer db.rwm.Unlock()
-	db.m[1] = hashedPassword
-	return "1", nil
+	key := genKey()
+	db.m[key] = hashedPassword
+	return key, nil
 }
 
 func (db *inMemDB) Retrieve(id string) (string, error) {
 	db.rwm.RLock()
 	defer db.rwm.RUnlock()
-	return db.m[1], nil
+	return db.m[id], nil
 }
 
 type user struct {
@@ -60,9 +63,6 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 func comparePwd(w http.ResponseWriter, r *http.Request) {
 	var u user
 	json.NewDecoder(r.Body).Decode(&u)
-
-	fmt.Println("Password: ", u.Password)
-
 	password.Authenticate(u.Username, u.Password, w, db)
 }
 
@@ -79,4 +79,13 @@ func main() {
 	mux.Handle("/user", password.Protected(authReq))
 
 	http.ListenAndServe(":3000", mux)
+}
+
+func genKey() string {
+	b := make([]byte, 8)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return hex.EncodeToString(b)
 }
