@@ -50,7 +50,7 @@ func WhoAmI(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/signup", SignUp)
 	http.HandleFunc("/signin", SignIn)
-	http.Handle("/protected", password.Protect(WhoAmI))
+	http.Handle("/protected", password.Protected(WhoAmI))
 }
 ```
 

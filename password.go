@@ -17,8 +17,8 @@ The functions defined in this library are designed to make it as easy as
 possible to create and authenticate users. They are all designed to be used
 with HTTP handlers:
 
-	// Grab the username and password from the request, and create a new user in the user store
-	// with those values
+	// Grab the username and password from the request, and create a new user
+	// in the user store with those values
 	http.HandleFunc("/signup", func(w http.ResponseWriter, r *http.Request) {
 		username := r.FormValue("Username")
 		password := r.FormValue("Password")
@@ -26,20 +26,21 @@ with HTTP handlers:
 		w.Write([]byte("New user: "+id))
 	})
 	...
-	// Sign in using a username and password. This will respond with a JSON web token if the user
-	// authenticates successfully
+	// Sign in using a username and password. This will respond with a JSON web
+	// token if the user authenticates successfully
 	http.HandleFunc("/signin", func(w http.ResponseWriter, r *http.Request) {
 		username := r.FormValue("Username")
 		password := r.FormValue("Password")
 		password.Authenticate(username, password, w, UserStore)
 	})
 	...
-	// Respond with the user's username. If they don't have a valid JSON web token, then this
-	// request will fail, saying the client is authorized
-	http.Handle("/whoami", password.Protect(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		username := ctx.Value("id")
-		w.Write([]byte("Your username is "+username))
-	})
+	// Respond with the user's username. If they don't have a valid JSON web
+	// token, then this request will fail, saying the client is unauthorized
+	http.Handle("/whoami", password.Protected(
+		func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+			username := ctx.Value("id")
+			fmt.Fprintf(w, "Your username: %s\n", username)
+	}))
 
 For a reference implementation of the `password.Authenticator` interface, see
 the example in the GitHub repository.
@@ -60,12 +61,13 @@ import (
 )
 
 var (
-	signingKey = genRandBytes()
 	// ErrInvalidSigningMethod is the error returned when a token's signature
 	// does match the signature used to sign the token header.
 	ErrInvalidSigningMethod = errors.New("Invalid signing method")
 	// ErrTokenInvalid means the signature didn't match.
 	ErrTokenInvalid = errors.New("Token isn't valid")
+
+	signingKey = genRandBytes()
 )
 
 // Authenticator is an interface for storing and retrieving hashed passwords
