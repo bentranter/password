@@ -5,7 +5,7 @@ system.
 
 Background
 
-The package revolves around the `password.Authenticator` interface. This
+The package revolves around the password.Authenticator interface. This
 interface implements only two methods: one for storing passwords, and one for
 retrieving them. This lets you use any backend to store your users, whether
 that be an in-memory store, Redis, Postgres, or something else altogether.
@@ -42,8 +42,9 @@ with HTTP handlers:
 			fmt.Fprintf(w, "Your username: %s\n", username)
 	}))
 
-For a reference implementation of the `password.Authenticator` interface, see
-the example in the GitHub repository.
+In this example, "UserStore" would satisfy the password.Authenticator
+interface. For a reference implementation of this interface, see the example
+in the GitHub repository.
 */
 package password
 
