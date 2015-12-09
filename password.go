@@ -74,13 +74,13 @@ func Authenticate(id string, password string, w http.ResponseWriter, a Authentic
 	json.NewEncoder(w).Encode(map[string]string{"token": tokStr})
 }
 
-// Protected is middleware that checks to see if the incoming request has a
+// Protect is middleware that checks to see if the incoming request has a
 // valid JSON web token. If it does, it executes the next `http.HandlerFunc`,
 // and passes it a `context.Context` containing a way to identify the current
 // user.
-type Protected func(ctx context.Context, w http.ResponseWriter, r *http.Request)
+type Protect func(ctx context.Context, w http.ResponseWriter, r *http.Request)
 
-func (fn Protected) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (fn Protect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	tok, err := jwt.ParseFromRequest(r, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if ok == false {

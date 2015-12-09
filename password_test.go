@@ -99,8 +99,8 @@ func TestAuthenticate(t *testing.T) {
 	tokJSON = fmt.Sprintf("%s\n", body)
 }
 
-func TestProtected(t *testing.T) {
-	ts := httptest.NewServer(Protected(authReq))
+func TestProtect(t *testing.T) {
+	ts := httptest.NewServer(Protect(authReq))
 	defer ts.Close()
 
 	client := &http.Client{}
