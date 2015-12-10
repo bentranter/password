@@ -76,7 +76,7 @@ func main() {
 
 	mux.HandleFunc("/", createUser)
 	mux.HandleFunc("/auth", comparePwd)
-	mux.Handle("/user", password.Protected(authReq))
+	mux.Handle("/user", password.Protect(authReq))
 
 	http.ListenAndServe(":3000", mux)
 }
