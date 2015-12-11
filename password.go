@@ -21,52 +21,34 @@ var (
 	ErrTokenInvalid = errors.New("Token isn't valid")
 
 	signingKey = genRandBytes()
+
+	//
+	cost = bcrypt.DefaultCost
 )
 
-// Authenticator is an interface for storing and retrieving hashed passwords
-type Authenticator interface {
-	Store(id string, hashedPassword string) (string, error)
-	Retrieve(id string) (string, error)
-}
-
-// New hashes and salts a given plaintext password using the bcrypt algorithm,
-// and stores it. The returned string is the generated key used to identify
-// that id/secret combination. It is typically the primary used to retrieve
-// that entry in the database.
-func New(username string, password string, a Authenticator) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// Hash hashes and salts a plaintext secret using bcrypt.
+func Hash(id string, secret string) (string, error) {
+	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), cost)
 	if err != nil {
 		return "", err // couldn't run bcrypt
 	}
-
-	id, err := a.Store(username, string(hashedPassword))
-	if err != nil {
-		return "", err // couldn't store pwd in db
-	}
-
-	return id, nil
+	return string(hashedSecret), nil
 }
 
-// Compare compares the stored hashed password with the password provided by
-// the user. If they match, it returns a JSON web token.
-func Compare(id string, password string, a Authenticator) (string, error) {
-	hashedPassword, err := a.Retrieve(id)
-	if err != nil {
-		return "", err // failed to retrieve password
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+// Compare compares a hashed secret with a plaintext secret to see if they
+// match. If they do, a JSON web token is generated with the given id.
+func Compare(id string, secret string, hashedSecret string) (string, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedSecret), []byte(secret))
 	if err != nil {
 		return "", err // passwords didn't match
 	}
-
 	return genToken(id)
 }
 
-// Authenticate runs `Compare` against an authenticator interface, and responds
-// with a JSON web token in the body of the request.
-func Authenticate(id string, password string, w http.ResponseWriter, a Authenticator) {
-	tokStr, err := Compare(id, password, a)
+// Authenticate runs `Compare`, and writes the generated JSON web token to the
+// response writer.
+func Authenticate(w http.ResponseWriter, id string, secret string, hashedSecret string) {
+	tokStr, err := Compare(id, secret, hashedSecret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -76,8 +58,8 @@ func Authenticate(id string, password string, w http.ResponseWriter, a Authentic
 
 // Protect is middleware that checks to see if the incoming request has a
 // valid JSON web token. If it does, it executes the next `http.HandlerFunc`,
-// and passes it a `context.Context` containing a way to identify the current
-// user.
+// and passes it a `context.Context` with the field "id" assigned to the
+// current user id.
 type Protect func(ctx context.Context, w http.ResponseWriter, r *http.Request)
 
 func (fn Protect) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -16,50 +16,39 @@ var (
 	storedPassword = ""
 	key            = []byte("secret")
 	tokJSON        = ""
+	u              = &user{
+		Username: "Tester",
+		Password: "password",
+	}
 )
+
+type user struct {
+	Username string
+	Password string
+}
 
 type tokStruct struct {
 	Token string `json:"token"`
 }
 
-type mock struct {
-	username string
-	password string
-}
-
-func (m *mock) Store(id string, hashedPassword string) (string, error) {
-	// Don't do anything with the id since we hard code 1 in these tests
-	storedPassword = hashedPassword
-	return "1", nil
-}
-
-func (m *mock) Retrieve(id string) (string, error) {
-	return storedPassword, nil
-}
-
-func TestNew(t *testing.T) {
+func TestHash(t *testing.T) {
 	// We need to set the signing key at the beginning of the tests, so that we
 	// can re-use it later to decode tokens
 	SetSigningKey(key)
+	hashedSecret, err := Hash(u.Username, u.Password)
 
-	m := &mock{
-		username: "Tester",
-		password: "password",
+	if err != nil {
+		t.Errorf("Failed to hash secret: %s\n", err.Error())
+	}
+	if hashedSecret == u.Password {
+		t.Errorf("Password not hashed: %s %s\n", hashedSecret, u.Password)
 	}
 
-	New(m.username, m.password, m)
-
-	if m.password == storedPassword {
-		t.Errorf("Password hashing failed")
-	}
+	storedPassword = hashedSecret
 }
 
 func TestCompare(t *testing.T) {
-	m := &mock{
-		username: "Tester",
-		password: "password",
-	}
-	tokStr, err := Compare(m.username, m.password, m)
+	tokStr, err := Compare(u.Username, u.Password, storedPassword)
 
 	if err != nil {
 		t.Errorf("Comparing passwords failed with error: %s\n", err)
@@ -74,19 +63,15 @@ func TestCompare(t *testing.T) {
 	if err != nil {
 		t.Errorf("Couldn't parse token: %s\n", err)
 	}
-	if token.Claims["sub"] != "Tester" {
+	if token.Claims["sub"] != u.Username {
 		t.Errorf("Incorrect claims for sub field: %s\n", token.Claims["sub"])
 	}
 }
 
 func TestAuthenticate(t *testing.T) {
-	m := &mock{
-		username: "Tester",
-		password: "password",
-	}
 	w := httptest.NewRecorder()
 
-	Authenticate(m.username, m.password, w, m)
+	Authenticate(w, u.Username, u.Password, storedPassword)
 	body, err := ioutil.ReadAll(w.Body)
 
 	if err != nil {
