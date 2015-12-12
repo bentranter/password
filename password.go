@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/boltdb/bolt"
 	jwt "github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
@@ -25,6 +26,18 @@ var (
 	//
 	cost = bcrypt.DefaultCost
 )
+
+var db = newDB()
+
+func newDB() *bolt.DB {
+	db, err := bolt.Open("password.db", 0600, &bolt.Options{
+		Timeout: 1 * time.Second,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
 
 // Hash hashes and salts a plaintext secret using bcrypt.
 func Hash(id string, secret string) (string, error) {
