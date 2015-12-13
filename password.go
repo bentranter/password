@@ -27,7 +27,28 @@ var (
 	cost = bcrypt.DefaultCost
 )
 
-var db = newDB()
+var store = newDB()
+
+// Authenticator is the interface that implements the methods for storing and
+// retrieving passwords.
+type Authenticator interface {
+	Store(id string, secret string) string
+	Retrieve(id string, secret string) string
+}
+
+// DefaultSore contains a reference to the default store for Password, and
+// satiesfies the Authenticator interface.
+type DefaultStore struct {
+	DB *bolt.DB
+}
+
+func (s *DefaultStore) Store(id string, secret string) string {
+	return "" // setup
+}
+
+func (s *DefaultStore) Retrieve(id string, secret string) string {
+	return "" // I should implement these
+}
 
 func newDB() *bolt.DB {
 	db, err := bolt.Open("password.db", 0600, &bolt.Options{
