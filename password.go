@@ -43,10 +43,24 @@ type DefaultStore struct {
 }
 
 func (s *DefaultStore) Store(id string, secret string) string {
-	return "" // setup
+	err := s.DB.Update(func(tx *bolt.Tx) error {
+		//
+		return nil
+	})
+	if err != nil {
+		// handle error
+	}
+	return ""
 }
 
 func (s *DefaultStore) Retrieve(id string, secret string) string {
+	err := s.DB.View(func(tx *bolt.Tx) error {
+		//
+		return nil
+	})
+	if err != nil {
+		// handle error
+	}
 	return "" // I should implement these
 }
 
