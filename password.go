@@ -24,10 +24,9 @@ var (
 	signingKey = genRandBytes()
 
 	//
-	cost = bcrypt.DefaultCost
+	cost         = bcrypt.DefaultCost
+	defaultStore = newDB()
 )
-
-var store = newDB()
 
 // Authenticator is the interface that implements the methods for storing and
 // retrieving passwords.
@@ -39,12 +38,14 @@ type Authenticator interface {
 // DefaultSore contains a reference to the default store for Password, and
 // satiesfies the Authenticator interface.
 type DefaultStore struct {
-	DB *bolt.DB
+	DB         *bolt.DB
+	BucketName string
+	Bucket     *bolt.Bucket
 }
 
 func (s *DefaultStore) Store(id string, secret string) string {
 	err := s.DB.Update(func(tx *bolt.Tx) error {
-		//
+
 		return nil
 	})
 	if err != nil {
@@ -64,14 +65,30 @@ func (s *DefaultStore) Retrieve(id string, secret string) string {
 	return "" // I should implement these
 }
 
-func newDB() *bolt.DB {
+func newDB() *DefaultStore {
 	db, err := bolt.Open("password.db", 0600, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})
 	if err != nil {
 		panic(err)
 	}
-	return db
+
+	var bucket *bolt.Bucket
+	bucketName := "Users"
+	db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte(bucketName))
+		if err != nil {
+			return err
+		}
+		bucket = b
+		return nil
+	})
+
+	return &DefaultStore{
+		DB:         db,
+		Bucket:     bucket,
+		BucketName: bucketName,
+	}
 }
 
 // Hash hashes and salts a plaintext secret using bcrypt.
