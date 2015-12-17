@@ -35,7 +35,7 @@ type Authenticator interface {
 	Retrieve(id string, secret string) string
 }
 
-// DefaultSore contains a reference to the default store for Password, and
+// DefaultStore contains a reference to the default store for Password, and
 // satiesfies the Authenticator interface.
 type DefaultStore struct {
 	DB         *bolt.DB
@@ -43,6 +43,8 @@ type DefaultStore struct {
 	Bucket     *bolt.Bucket
 }
 
+// Store stores the given id and secret in Bolt. It will hash the secret using
+// bcrypt before storing it.
 func (s *DefaultStore) Store(id string, secret string) string {
 	err := s.DB.Update(func(tx *bolt.Tx) error {
 
@@ -54,6 +56,8 @@ func (s *DefaultStore) Store(id string, secret string) string {
 	return ""
 }
 
+// Retrieve retrieves the given id and secret from Bolt. It will compare the
+// plaintext password with the hashed password.
 func (s *DefaultStore) Retrieve(id string, secret string) string {
 	err := s.DB.View(func(tx *bolt.Tx) error {
 		//
