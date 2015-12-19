@@ -1,6 +1,6 @@
 /*
 Package password implements a simple JSON web token based authentication
-system.
+system. It uses BoltDB as a default store for user information.
 
 
 Background
