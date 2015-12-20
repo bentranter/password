@@ -23,7 +23,8 @@ var (
 
 	signingKey = genRandBytes()
 
-	//
+	// Defaults
+	// @TODO: Refactor into one struct
 	cost         = bcrypt.DefaultCost
 	defaultStore = newDB()
 )
@@ -47,8 +48,13 @@ type DefaultStore struct {
 // bcrypt before storing it.
 func (s *DefaultStore) Store(id string, secret string) string {
 	err := s.DB.Update(func(tx *bolt.Tx) error {
-
-		return nil
+		b := tx.Bucket([]byte(s.BucketName))
+		hashedSecret, err := Hash(secret)
+		if err != nil {
+			return err
+		}
+		err = b.Put([]byte(id), []byte(hashedSecret))
+		return err
 	})
 	if err != nil {
 		// handle error
@@ -96,7 +102,7 @@ func newDB() *DefaultStore {
 }
 
 // Hash hashes and salts a plaintext secret using bcrypt.
-func Hash(id string, secret string) (string, error) {
+func Hash(secret string) (string, error) {
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), cost)
 	if err != nil {
 		return "", err // couldn't run bcrypt
