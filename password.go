@@ -74,8 +74,7 @@ func (s *DefaultStore) Retrieve(id string, secret string) (string, error) {
 	if err != nil {
 		return id, err
 	}
-	tok, err := Compare(id, secret, string(hashedSecret))
-	return tok, err
+	return string(hashedSecret), err
 }
 
 func newDB() *DefaultStore {
