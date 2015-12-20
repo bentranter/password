@@ -32,8 +32,8 @@ var (
 // Authenticator is the interface that implements the methods for storing and
 // retrieving passwords.
 type Authenticator interface {
-	Store(id string, secret string) string
-	Retrieve(id string, secret string) string
+	Store(id string, secret string) (string, error)
+	Retrieve(id string, secret string) (string, error)
 }
 
 // DefaultStore contains a reference to the default store for Password, and
@@ -46,7 +46,7 @@ type DefaultStore struct {
 
 // Store stores the given id and secret in Bolt. It will hash the secret using
 // bcrypt before storing it.
-func (s *DefaultStore) Store(id string, secret string) string {
+func (s *DefaultStore) Store(id string, secret string) (string, error) {
 	err := s.DB.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(s.BucketName))
 		hashedSecret, err := Hash(secret)
@@ -56,23 +56,26 @@ func (s *DefaultStore) Store(id string, secret string) string {
 		err = b.Put([]byte(id), []byte(hashedSecret))
 		return err
 	})
-	if err != nil {
-		// handle error
-	}
-	return ""
+	return id, err
 }
 
 // Retrieve retrieves the given id and secret from Bolt. It will compare the
 // plaintext password with the hashed password.
-func (s *DefaultStore) Retrieve(id string, secret string) string {
+//
+// @TODO: If the majority of DB drivers use byte slices in their drivers,
+// switch to that. I should look at mgo, redis, gorethink, and the sql ones.
+func (s *DefaultStore) Retrieve(id string, secret string) (string, error) {
+	var hashedSecret []byte
 	err := s.DB.View(func(tx *bolt.Tx) error {
-		//
+		b := tx.Bucket([]byte(s.BucketName))
+		hashedSecret = b.Get([]byte(id))
 		return nil
 	})
 	if err != nil {
-		// handle error
+		return id, err
 	}
-	return "" // I should implement these
+	tok, err := Compare(id, secret, string(hashedSecret))
+	return tok, err
 }
 
 func newDB() *DefaultStore {
