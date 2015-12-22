@@ -13,19 +13,8 @@ import (
 )
 
 var (
-	storedPassword = ""
-	key            = []byte("secret")
-	tokJSON        = ""
-	u              = &user{
-		Username: "Tester",
-		Password: "password",
-	}
+	key = []byte("secret")
 )
-
-type user struct {
-	Username string
-	Password string
-}
 
 type tokStruct struct {
 	Token string `json:"token"`
@@ -43,8 +32,6 @@ func TestHash(t *testing.T) {
 	if hashedSecret == u.Password {
 		t.Errorf("Password not hashed: %s %s\n", hashedSecret, u.Password)
 	}
-
-	storedPassword = hashedSecret
 }
 
 func TestCompare(t *testing.T) {
