@@ -1,29 +1,53 @@
 package main
 
 import (
-	"fmt"
-	"html/template"
 	"net/http"
+	"text/template"
 
 	"github.com/bentranter/password"
 	"golang.org/x/net/context"
 )
 
-type user struct {
-	Username string
-	Password string
-}
+const signUpForm = `
+<div style="font-family: 'Helvetica', sans-serif; margin: 2rem; color: #333">
+	<h3 style="font-size: 1.5rem">Sign Up</h3>
+	<form action="/" method="POST">
+		<input type="text" name="username" placeholder="Username">
+		<input type="password" name="password" placeholder="Password">
+		<input type="submit" value="Sign Up">
+	</form>
+</div>
+`
+
+const signedIn = `
+	<div style="font-family: 'Helvetica', sans-serif; margin: 2rem; color: #333">
+		<h3 style="font-size: 1.5rem">Thanks for signing up!</h3>
+		<p>Click <a href="/me">here</a> to see who you are...</p>
+	</div>
+`
 
 func createUser(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	r.ParseForm()
-}
+	switch r.Method {
+	case "GET":
+		t, err := template.New("signUpForm").Parse(signUpForm)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		t.Execute(w, nil)
+	case "POST":
+		id := r.FormValue("username")
+		secret := r.FormValue("password")
+		r.ParseForm()
 
-func comparePwd(w http.ResponseWriter, r *http.Request) {
-	var u user
-	json.NewDecoder(r.Body).Decode(&u)
-	password.Authenticate(u.Username, u.Password, w, db)
+		password.NewCookieAuthenticatedUser(w, id, secret)
+		t, err := template.New("signedIn").Parse(signedIn)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		t.Execute(w, nil)
+	default:
+		http.Error(w, "Use GET or POST", http.StatusMethodNotAllowed)
+	}
 }
 
 func authReq(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -35,8 +59,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", createUser)
-	mux.HandleFunc("/auth", comparePwd)
-	mux.Handle("/user", password.Protect(authReq))
+	mux.Handle("/me", password.Protect(authReq))
 
 	http.ListenAndServe(":3000", mux)
 }

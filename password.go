@@ -21,10 +21,9 @@ var (
 	// ErrTokenInvalid means the signature didn't match.
 	ErrTokenInvalid = errors.New("Token isn't valid")
 
-	signingKey = genRandBytes()
-
 	// Defaults
 	// @TODO: Refactor into one struct
+	signingKey   = genRandBytes()
 	cost         = bcrypt.DefaultCost
 	defaultStore = newDB()
 )
@@ -161,6 +160,49 @@ func (fn Protect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := context.WithValue(context.Background(), "id", id)
 
 	fn(ctx, w, r)
+}
+
+// NewUser creates a new user from a username/password combo
+func NewUser(id string, secret string) (string, error) {
+	id, err := defaultStore.Store(id, secret)
+	return id, err
+}
+
+// NewAuthenticatedUser creates a new user from a username/password combo, and
+// generates a JSON web token. It writes the token in the body of the response
+// as JSON.
+func NewAuthenticatedUser(w http.ResponseWriter, id string, secret string) {
+	id, err := defaultStore.Store(id, secret)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	tok, err := genToken(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(map[string]string{"token": tok})
+}
+
+// NewCookieAuthenticatedUser is just like NewAuthenticatedUser, but it
+// sets a cookie on the response containing the JSON web token (instead of
+// responding with the cookie in the body). It will not send the response!
+func NewCookieAuthenticatedUser(w http.ResponseWriter, id string, secret string) {
+	id, err := defaultStore.Store(id, secret)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	tok, err := genToken(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	cookie := &http.Cookie{
+		Name:       "user-cookie",
+		Value:      tok,
+		Path:       "/",
+		RawExpires: string(time.Now().Add(time.Hour * 72).Unix()),
+		HttpOnly:   true,
+	}
+	http.SetCookie(w, cookie)
 }
 
 // SetSigningKey allows you to override the default HMAC signing key with one
