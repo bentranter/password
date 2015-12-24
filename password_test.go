@@ -13,7 +13,11 @@ import (
 )
 
 var (
-	key = []byte("secret")
+	key      = []byte("secret")
+	username = "Tester"
+	password = "p455w0rd"
+	hashed   = ""
+	tokJSON  = ""
 )
 
 type tokStruct struct {
@@ -24,18 +28,21 @@ func TestHash(t *testing.T) {
 	// We need to set the signing key at the beginning of the tests, so that we
 	// can re-use it later to decode tokens
 	SetSigningKey(key)
-	hashedSecret, err := Hash(u.Username, u.Password)
+	hashedSecret, err := Hash(password)
 
 	if err != nil {
 		t.Errorf("Failed to hash secret: %s\n", err.Error())
 	}
-	if hashedSecret == u.Password {
-		t.Errorf("Password not hashed: %s %s\n", hashedSecret, u.Password)
+	if hashedSecret == password {
+		t.Errorf("Password not hashed: %s %s\n", hashedSecret, password)
 	}
+
+	// Need to re-use this for other tests
+	hashed = hashedSecret
 }
 
 func TestCompare(t *testing.T) {
-	tokStr, err := Compare(u.Username, u.Password, storedPassword)
+	tokStr, err := Compare(username, password, hashed)
 
 	if err != nil {
 		t.Errorf("Comparing passwords failed with error: %s\n", err)
@@ -50,7 +57,7 @@ func TestCompare(t *testing.T) {
 	if err != nil {
 		t.Errorf("Couldn't parse token: %s\n", err)
 	}
-	if token.Claims["sub"] != u.Username {
+	if token.Claims["sub"] != username {
 		t.Errorf("Incorrect claims for sub field: %s\n", token.Claims["sub"])
 	}
 }
@@ -58,7 +65,7 @@ func TestCompare(t *testing.T) {
 func TestAuthenticate(t *testing.T) {
 	w := httptest.NewRecorder()
 
-	Authenticate(w, u.Username, u.Password, storedPassword)
+	Authenticate(w, username, password, hashed)
 	body, err := ioutil.ReadAll(w.Body)
 
 	if err != nil {
