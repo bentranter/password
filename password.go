@@ -132,6 +132,15 @@ func Authenticate(w http.ResponseWriter, id string, secret string, hashedSecret 
 	json.NewEncoder(w).Encode(map[string]string{"token": tokStr})
 }
 
+// ExpireCookie sets the expiry on the cookie. It will not send the request.
+func ExpireCookie(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("user")
+	cookie.Value = ""
+	cookie.RawExpires = string(time.UnixDate)
+	cookie.MaxAge = -1
+	http.SetCookie(w, cookie)
+}
+
 // Protect is middleware that checks to see if the incoming request has a
 // valid JSON web token. If it does, it executes the next `http.HandlerFunc`,
 // and passes it a `context.Context` with the field "id" assigned to the
@@ -154,6 +163,7 @@ func (fn Protect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if tok.Valid != true {
 		http.Error(w, ErrTokenInvalid.Error(), http.StatusUnauthorized)
+		return
 	}
 
 	id := tok.Claims["sub"]
@@ -171,6 +181,7 @@ func (fn CookieProtect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("user")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusForbidden)
+		return
 	}
 	tok, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
@@ -188,6 +199,7 @@ func (fn CookieProtect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if tok.Valid != true {
 		http.Error(w, ErrTokenInvalid.Error(), http.StatusUnauthorized)
+		return
 	}
 
 	// Get the user id from the token
@@ -212,10 +224,12 @@ func NewAuthenticatedUser(w http.ResponseWriter, id string, secret string) {
 	id, err := defaultStore.Store(id, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	tok, err := genToken(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	json.NewEncoder(w).Encode(map[string]string{"token": tok})
 }
@@ -227,10 +241,12 @@ func NewCookieAuthenticatedUser(w http.ResponseWriter, id string, secret string)
 	id, err := defaultStore.Store(id, secret)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	tok, err := genToken(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	cookie := &http.Cookie{
 		Name:       "user",

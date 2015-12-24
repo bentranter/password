@@ -29,6 +29,14 @@ const signedIn = `
 const hello = `
 	<div style="font-family: 'Helvetica', sans-serif; margin: 2rem; color: #333">
 		<h3 style="font-size: 1.5rem">Hello, {{ .User }}!</h3>
+		<p><a href="/logout">Log out</a></p>
+	</div>
+`
+
+const logout = `
+	<div style="font-family: 'Helvetica', sans-serif; margin: 2rem; color: #333">
+		<h3 style="font-size: 1.5rem">You've been logged out</h3>
+		<p><a href="/me">Check it out</a></p>
 	</div>
 `
 
@@ -66,10 +74,20 @@ func authReq(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, user)
 }
 
+func logoutUser(w http.ResponseWriter, r *http.Request) {
+	password.ExpireCookie(w, r)
+	t, err := template.New("logout").Parse(logout)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	t.Execute(w, nil)
+}
+
 func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", createUser)
+	mux.HandleFunc("/logout", logoutUser)
 	mux.Handle("/me", password.CookieProtect(authReq))
 
 	http.ListenAndServe(":3000", mux)
