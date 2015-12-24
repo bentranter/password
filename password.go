@@ -162,6 +162,43 @@ func (fn Protect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fn(ctx, w, r)
 }
 
+// CookieProtect is the same as `Protect`, but it looks for the token in the
+// `user-cookie` instead of the Authorization header. It's meant to be used
+// with the `NewCookieAuthenticatedUser` function.
+type CookieProtect func(ctx context.Context, w http.ResponseWriter, r *http.Request)
+
+func (fn CookieProtect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("user")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+	}
+	tok, err := jwt.Parse(cookie.Value, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if ok == false {
+			return nil, ErrInvalidSigningMethod
+		}
+		return signingKey, nil
+	})
+
+	if err != nil {
+		// might wanna use switch statement
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if tok.Valid != true {
+		http.Error(w, ErrTokenInvalid.Error(), http.StatusUnauthorized)
+	}
+
+	// Get the user id from the token
+	id := tok.Claims["sub"]
+	ctx := context.WithValue(context.Background(), "id", id)
+
+	// Execute the handler with the user in the context
+	fn(ctx, w, r)
+
+}
+
 // NewUser creates a new user from a username/password combo
 func NewUser(id string, secret string) (string, error) {
 	id, err := defaultStore.Store(id, secret)
@@ -196,7 +233,7 @@ func NewCookieAuthenticatedUser(w http.ResponseWriter, id string, secret string)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	cookie := &http.Cookie{
-		Name:       "user-cookie",
+		Name:       "user",
 		Value:      tok,
 		Path:       "/",
 		RawExpires: string(time.Now().Add(time.Hour * 72).Unix()),

@@ -26,6 +26,12 @@ const signedIn = `
 	</div>
 `
 
+const hello = `
+	<div style="font-family: 'Helvetica', sans-serif; margin: 2rem; color: #333">
+		<h3 style="font-size: 1.5rem">Hello, {{ .User }}!</h3>
+	</div>
+`
+
 func createUser(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
@@ -51,15 +57,20 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func authReq(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	user := ctx.Value("id")
-	w.Write([]byte("User: " + user.(string)))
+	id := ctx.Value("id")
+	user := map[string]string{"User": id.(string)}
+	t, err := template.New("hello").Parse(hello)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	t.Execute(w, user)
 }
 
 func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", createUser)
-	mux.Handle("/me", password.Protect(authReq))
+	mux.Handle("/me", password.CookieProtect(authReq))
 
 	http.ListenAndServe(":3000", mux)
 }
