@@ -21,36 +21,48 @@ Here is the most basic example:
 package main
 
 import (
+	"html/template"
 	"net/http"
 
 	"github.com/bentranter/password"
 	"golang.org/x/net/context"
 )
 
-func SignUp(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("Username")
-	password := r.FormValue("Password")
+var t = template.Must(template.ParseGlob("templates/*"))
 
-	id, err := password.New(username, password, UserStore)
-	w.Write([]byte(id))
+func createUser(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		t.Execute(w, nil)
+	case "POST":
+		id := r.FormValue("username")
+		secret := r.FormValue("password")
+		r.ParseForm()
+
+		password.NewCookieAuthenticatedUser(w, id, secret)
+		t.Execute(w, nil)
+	default:
+		http.Error(w, "Use GET or POST", http.StatusMethodNotAllowed)
+	}
 }
 
-func SignIn(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("Username")
-	password := r.FormValue("Password")
-
-	password.Authenticate(username, password, w, UserStore)
+func authReq(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	id := ctx.Value("id")
+	user := map[string]string{"User": id.(string)}
+	t.Execute(w, user)
 }
 
-func WhoAmI(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	username := ctx.Value("id")
-	w.Write([]byte(username))
+func logoutUser(w http.ResponseWriter, r *http.Request) {
+	password.ExpireCookie(w, r)
+	t.Execute(w, nil)
 }
 
 func main() {
-	http.HandleFunc("/signup", SignUp)
-	http.HandleFunc("/signin", SignIn)
-	http.Handle("/protected", password.Protected(WhoAmI))
+	http.HandleFunc("/", createUser)
+	http.HandleFunc("/logout", logoutUser)
+	http.Handle("/me", password.CookieProtect(authReq))
+
+	http.ListenAndServe(":3000", nil)
 }
 ```
 
