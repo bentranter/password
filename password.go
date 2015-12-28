@@ -155,21 +155,25 @@ func (fn Protect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return signingKey, nil
 	})
-	if err != nil {
-		// might wanna use switch statement
+
+	switch err {
+	case jwt.ErrNoTokenInRequest:
+		// User isn't logged in - don't want to error
+		ctx := context.WithValue(context.Background(), "id", nil)
+		fn(ctx, w, r)
+	case nil:
+		if tok.Valid != true {
+			http.Error(w, ErrTokenInvalid.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		id := tok.Claims["sub"]
+		ctx := context.WithValue(context.Background(), "id", id)
+
+		fn(ctx, w, r)
+	default:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	if tok.Valid != true {
-		http.Error(w, ErrTokenInvalid.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	id := tok.Claims["sub"]
-	ctx := context.WithValue(context.Background(), "id", id)
-
-	fn(ctx, w, r)
 }
 
 // CookieProtect is the same as `Protect`, but it looks for the token in the
