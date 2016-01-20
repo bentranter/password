@@ -69,8 +69,7 @@ func main() {
 Usage
 ---
 
-In the above example, you can see a reference to a UserStore. In order to use Password, you'll need to create your own user store. Don't worry though! `UserStore` is simply a struct that satisfies the `password.Authenticator` interface. That interface only has two methods:
-
+In the above example, you can see a reference to a UserStore. Password ships with a default `UserStore`: [BoltDB](https://github.com/boltdb/bolt). BoltDB is a simple but fast key-value store - perfect for storing users and their passwords. If you want to user a different database, you'll need to create a struct that satisfies the `password.Authenticator` interface. That interface only has two methods:
 - `Store(id string, hashedPassword string) (string, error)`
 - `Retrieve(id string) (string, error)`
 
@@ -78,7 +77,11 @@ The `Store` method should create a new entry in your data store with the given `
 
 The `Retrieve` method is used to compare passwords, so the method needs to find the user in the data store by their `id`, and return their hashed password.
 
-To see a fully functional but very simple example of this, try out the program in the [cmd](https://github.com/bentranter/password/tree/master/cmd) folder of this repo.
+Here's a list of currently supported DB integrations:
+
+- [Postgres](https://github.com/bentranter/postgres-password-client)
+
+To see a fully functional but very simple example of how to use `password`, check out the program in the [cmd](https://github.com/bentranter/password/tree/master/cmd) folder of this repo.
 
 License
 ---
