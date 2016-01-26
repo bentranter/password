@@ -1,7 +1,5 @@
 package password
 
-import "strconv"
-
 // User is the type
 type User struct {
 	ID          string
