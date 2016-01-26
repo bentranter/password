@@ -5,8 +5,6 @@
 package password
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -24,10 +22,7 @@ var (
 	// ErrTokenInvalid means the signature didn't match.
 	ErrTokenInvalid = errors.New("Token isn't valid")
 
-	// Defaults
-	// @TODO: Refactor into one struct
-	signingKey = genRandBytes()
-	cost       = bcrypt.DefaultCost
+	cost = bcrypt.DefaultCost
 )
 
 // Authenticator is the interface that implements the methods for storing and
@@ -186,28 +181,4 @@ func NewCookieAuthenticatedUser(w http.ResponseWriter, id string, secret string)
 		HttpOnly:   true,
 	}
 	http.SetCookie(w, cookie)
-}
-
-// SetSigningKey allows you to override the default HMAC signing key with one
-// of your own. Every time this package is imported, a signing key is set
-// randomly. That means that in between restarts, a new key is set, so you'd
-// no longer be able to verify JSON web tokens created with that key. In order
-// to reuse the signing key, you must set it yourself. Just call this function
-// before creating any tokens, and you'll be good to go.
-func SetSigningKey(key []byte) {
-	signingKey = key
-}
-
-func genRandBytes() []byte {
-	// Use 32 bytes (256 bits) to satisfy the requirement for the HMAC key
-	// length.
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
-	if err != nil {
-		// If this errors, it means that something is wrong the system's
-		// CSPRNG, which indicates a critical operating system failure. Panic
-		// and crash here
-		panic(err)
-	}
-	return []byte(base64.URLEncoding.EncodeToString(b))
 }
