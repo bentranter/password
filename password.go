@@ -136,8 +136,8 @@ func (fn CookieProtect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// NewUser creates a new user from a username/password combo
-func NewUser(id string, secret string) (string, error) {
+// CreateUser creates a new user from a username/password combo
+func CreateUser(id string, secret string) (string, error) {
 	id, err := DefaultStore.Store(id, secret)
 	return id, err
 }
