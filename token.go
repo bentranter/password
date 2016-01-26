@@ -37,10 +37,10 @@ func SetSigningKey(key []byte) {
 	signingKey = key
 }
 
+// genRandBytes gnerates a 32 byte long (after encoding) random key for us with
+// the various HMAC functions called in this package.
 func genRandBytes() []byte {
-	// Use 32 bytes (256 bits) to satisfy the requirement for the HMAC key
-	// length.
-	b := make([]byte, 32)
+	b := make([]byte, 24)
 	_, err := rand.Read(b)
 	if err != nil {
 		// If this errors, it means that something is wrong the system's
