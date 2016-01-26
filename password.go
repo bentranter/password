@@ -53,7 +53,7 @@ func Compare(id string, secret string, hashedSecret string) (string, error) {
 	if err != nil {
 		return "", err // passwords didn't match
 	}
-	return genToken(id)
+	return GenToken(id)
 }
 
 // Authenticate runs `Compare`, and writes the generated JSON web token to the
@@ -65,15 +65,6 @@ func Authenticate(w http.ResponseWriter, id string, secret string, hashedSecret 
 		return
 	}
 	json.NewEncoder(w).Encode(map[string]string{"token": tokStr})
-}
-
-// ExpireCookie sets the expiry on the cookie. It will not send the request.
-func ExpireCookie(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie("user")
-	cookie.Value = ""
-	cookie.RawExpires = string(time.UnixDate)
-	cookie.MaxAge = -1
-	http.SetCookie(w, cookie)
 }
 
 // Protect is middleware that checks to see if the incoming request has a
@@ -165,7 +156,7 @@ func NewAuthenticatedUser(w http.ResponseWriter, id string, secret string) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tok, err := genToken(id)
+	tok, err := GenToken(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -182,7 +173,7 @@ func NewCookieAuthenticatedUser(w http.ResponseWriter, id string, secret string)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tok, err := genToken(id)
+	tok, err := GenToken(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -205,22 +196,6 @@ func NewCookieAuthenticatedUser(w http.ResponseWriter, id string, secret string)
 // before creating any tokens, and you'll be good to go.
 func SetSigningKey(key []byte) {
 	signingKey = key
-}
-
-func genToken(id string) (string, error) {
-	jwt := jwt.New(jwt.SigningMethodHS256)
-	expTime := time.Now().Add(time.Hour * 72).Unix()
-
-	jwt.Claims["sub"] = id
-	jwt.Claims["exp"] = expTime
-	jwt.Claims["iat"] = time.Now().Unix()
-
-	tokStr, err := jwt.SignedString(signingKey)
-	if err != nil {
-		return "", err // failed to sign token
-	}
-
-	return tokStr, nil
 }
 
 func genRandBytes() []byte {
