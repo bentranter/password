@@ -7,7 +7,7 @@ Installation
 ---
 
 ```bash
-$ go get github.com/bentranter
+$ go get github.com/bentranter/password
 ```
 
 Intro
@@ -82,6 +82,11 @@ Here's a list of currently supported DB integrations:
 - [Postgres](https://github.com/bentranter/postgres-password-client)
 
 To see a fully functional but very simple example of how to use `password`, check out the program in the [cmd](https://github.com/bentranter/password/tree/master/cmd) folder of this repo.
+
+API Stability Guarantee
+---
+
+Until 1.0 is reached, API stability is not guaranteed. Once 1.0 is reached, the API will not change in backwards incompatible ways.
 
 License
 ---
