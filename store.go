@@ -17,9 +17,11 @@ var DefaultStore = newDB()
 // Store contains a reference to the default store for Password, and
 // satiesfies the Authenticator interface.
 type Store struct {
-	DB         *bolt.DB
-	BucketName string
-	Bucket     *bolt.Bucket
+	DB               *bolt.DB
+	BucketName       string
+	CookieBucketName string
+	Bucket           *bolt.Bucket
+	CookieBucket     *bolt.Bucket
 }
 
 // Store stores the given id and secret in Bolt. It will hash the secret using
@@ -74,9 +76,22 @@ func newDB() *Store {
 		return nil
 	})
 
+	var cookieBucket *bolt.Bucket
+	cookieBucketName := "Cookies"
+	db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte(cookieBucketName))
+		if err != nil {
+			return err
+		}
+		cookieBucket = b
+		return nil
+	})
+
 	return &Store{
-		DB:         db,
-		Bucket:     bucket,
-		BucketName: bucketName,
+		DB:               db,
+		Bucket:           bucket,
+		BucketName:       bucketName,
+		CookieBucketName: cookieBucketName,
+		CookieBucket:     cookieBucket,
 	}
 }
