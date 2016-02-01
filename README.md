@@ -1,7 +1,7 @@
 Password [![GoDoc](https://godoc.org/github.com/bentranter/password?status.svg)](https://godoc.org/github.com/bentranter/password) [![Build Status](https://semaphoreci.com/api/v1/projects/4b4281c9-7095-4547-92b3-902b06b88e9d/645033/badge.svg)](https://semaphoreci.com/bentranter/password)
 ===
 
-Dead simple username/password based auth for web apps.
+Username/password based authentication for web applications.
 
 Installation
 ---
