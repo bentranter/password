@@ -1,41 +1,40 @@
 package password
 
-// User is the type
-type User struct {
-	ID          string
-	Email       string
-	PhoneNumber string
-	Password    string
+import (
+	"github.com/boltdb/bolt"
+	"github.com/garyburd/redigo/redis"
+)
+
+var userStore = ""
+
+// UserStore stores users in DBs
+type UserStore interface {
+	All()
+	Create()
+	Find()
+	Update()
+	Delete()
 }
 
-// ANewUser creates a new user with the provided info. It validates the email.
-func ANewUser(id string, email string, phoneNumber string, password string) (*User, error) {
-	phoneNumber, err := EnsurePhoneNumber(phoneNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	return &User{
-		ID:          id,
-		Email:       email,
-		PhoneNumber: phoneNumber,
-		Password:    password,
-	}, nil
+// BoltUser is the user DB for Bolt.
+type BoltUser struct {
+	DB         *bolt.DB
+	BucketName []byte
 }
 
-// IsEmail will verify that the given string is a valid email address. It
-// will return false if it is not, and true if it is.
-func IsEmail(email string) bool {
-	return true
+func (u *BoltUser) All()    {}
+func (u *BoltUser) Create() {}
+func (u *BoltUser) Find()   {}
+func (u *BoltUser) Update() {}
+func (u *BoltUser) Delete() {}
+
+// RedisUser is the user DB for Redis.
+type RedisUser struct {
+	DB redis.Conn
 }
 
-// EnsurePhoneNumber removes any characters that aren't 0-9 from the string.
-func EnsurePhoneNumber(phoneNum string) (string, error) {
-	var validatedPhoneNum []byte
-	for _, str := range phoneNum {
-		if str >= 48 && str <= 57 {
-			validatedPhoneNum = append(validatedPhoneNum, byte(str))
-		}
-	}
-	return string(validatedPhoneNum), nil
-}
+func (u *RedisUser) All()    {}
+func (u *RedisUser) Create() {}
+func (u *RedisUser) Find()   {}
+func (u *RedisUser) Update() {}
+func (u *RedisUser) Delete() {}
