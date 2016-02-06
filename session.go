@@ -1,20 +1,35 @@
 package password
 
 import (
-	"net/http"
-
+	"github.com/boltdb/bolt"
+	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/sessions"
 )
 
-var store = sessions.NewCookieStore(genRandBytes())
+var sessionStore = sessions.NewCookieStore(genRandBytes())
 
-// GetSession gets the currently active session from the store based on the
-// value from the requests cookie.
-func GetSession(r *http.Request) {
-
+// SessionStore stores sessions in DBs
+type SessionStore interface {
+	Get()
+	New()
+	Save()
 }
 
-// AuthorizeSession sets the session.
-func AuthorizeSession(r *http.Request) {
-
+// BoltSession is the session DB for Bolt.
+type BoltSession struct {
+	DB         *bolt.DB
+	BucketName []byte
 }
+
+func (s *BoltSession) Get()  {}
+func (s *BoltSession) New()  {}
+func (s *BoltSession) Save() {}
+
+// RedisSession is the session DB for Redis.
+type RedisSession struct {
+	DB redis.Conn
+}
+
+func (s *RedisSession) Get()  {}
+func (s *RedisSession) New()  {}
+func (s *RedisSession) Save() {}
