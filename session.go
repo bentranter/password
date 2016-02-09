@@ -8,6 +8,9 @@ import (
 
 var sessionStore = sessions.NewCookieStore(genRandBytes())
 
+// Session represents a single session on the server.
+type Session struct{}
+
 // SessionStore stores sessions in DBs
 type SessionStore interface {
 	Get()

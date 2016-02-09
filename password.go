@@ -33,12 +33,12 @@ type Authenticator interface {
 }
 
 // Hash hashes and salts a plaintext secret using bcrypt.
-func Hash(secret string) (string, error) {
+func Hash(secret string) ([]byte, error) {
 	hashedSecret, err := bcrypt.GenerateFromPassword([]byte(secret), cost)
 	if err != nil {
-		return "", err // couldn't run bcrypt
+		return nil, err // couldn't run bcrypt
 	}
-	return string(hashedSecret), nil
+	return hashedSecret, nil
 }
 
 // Compare compares a hashed secret with a plaintext secret to see if they

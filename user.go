@@ -5,17 +5,29 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/garyburd/redigo/redis"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var userStore = NewBoltUserStore()
 
+// User represents a single user
+type User struct {
+	ID          []byte
+	Password    []byte
+	Name        []byte
+	Email       []byte
+	DateCreated time.Time
+	LastLogin   time.Time
+	PhoneNumber []byte
+}
+
 // UserStore stores users in DBs
 type UserStore interface {
-	All()
-	Create()
-	Find()
-	Update()
-	Delete()
+	All() []*User
+	Create(u *User) ([]byte, error)
+	Find(id []byte) *User
+	Update(id []byte) error
+	Delete(id []byte) error
 }
 
 // BoltUser is the user DB for Bolt.
@@ -24,11 +36,26 @@ type BoltUser struct {
 	BucketName []byte
 }
 
-func (u *BoltUser) All()    {}
-func (u *BoltUser) Create() {}
-func (u *BoltUser) Find()   {}
-func (u *BoltUser) Update() {}
-func (u *BoltUser) Delete() {}
+func (b *BoltUser) All() {}
+
+// Create creates a new user in the DB
+func (b *BoltUser) Create(u *User) ([]byte, error) {
+	err := b.DB.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(b.BucketName)
+		hashedSecret, err := bcrypt.GenerateFromPassword(u.Password, bcrypt.DefaultCost)
+		u.Password = hashedSecret
+		if err != nil {
+			return err
+		}
+		err = b.Put(u.Email, hashedSecret)
+		return err
+	})
+	return u.ID, err
+}
+
+func (b *BoltUser) Find()   {}
+func (b *BoltUser) Update() {}
+func (b *BoltUser) Delete() {}
 
 // RedisUser is the user DB for Redis.
 type RedisUser struct {

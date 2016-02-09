@@ -33,12 +33,12 @@ func TestHash(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to hash secret: %s\n", err.Error())
 	}
-	if hashedSecret == password {
+	if string(hashedSecret) == password {
 		t.Errorf("Password not hashed: %s %s\n", hashedSecret, password)
 	}
 
 	// Need to re-use this for other tests
-	hashed = hashedSecret
+	hashed = string(hashedSecret)
 }
 
 func TestCompare(t *testing.T) {
