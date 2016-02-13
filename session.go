@@ -1,6 +1,8 @@
 package password
 
 import (
+	"net/http"
+
 	"github.com/boltdb/bolt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/gorilla/sessions"
@@ -14,7 +16,7 @@ type Session struct{}
 // SessionStore stores sessions in DBs
 type SessionStore interface {
 	Get()
-	New()
+	New(r *http.Request)
 	Save()
 }
 
@@ -24,15 +26,15 @@ type BoltSession struct {
 	BucketName []byte
 }
 
-func (s *BoltSession) Get()  {}
-func (s *BoltSession) New()  {}
-func (s *BoltSession) Save() {}
+func (s *BoltSession) Get()                {}
+func (s *BoltSession) New(r *http.Request) {}
+func (s *BoltSession) Save()               {}
 
 // RedisSession is the session DB for Redis.
 type RedisSession struct {
 	DB redis.Conn
 }
 
-func (s *RedisSession) Get()  {}
-func (s *RedisSession) New()  {}
-func (s *RedisSession) Save() {}
+func (s *RedisSession) Get()                {}
+func (s *RedisSession) New(r *http.Request) {}
+func (s *RedisSession) Save()               {}
